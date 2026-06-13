@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Play, QrCode } from 'lucide-react'
 import AnimatedCounter from '../ui/AnimatedCounter'
 import ScanCardModal from '../ui/ScanCardModal'
+import { useAuth } from '../../context/AuthContext'
 
 const ScoreOrb3D = lazy(() => import('../three/ScoreOrb3D'))
 
@@ -24,6 +25,7 @@ const stats = [
 
 export default function HeroSection() {
   const [isScanModalOpen, setIsScanModalOpen] = useState(false)
+  const { isAuthenticated, openAuthModal } = useAuth()
 
   return (
     <section
@@ -117,9 +119,19 @@ export default function HeroSection() {
             custom={3}
             style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 48 }}
           >
-            <Link to="/assessment" className="btn-primary">
+            <button 
+              className="btn-primary" 
+              onClick={(e) => {
+                e.preventDefault()
+                if (isAuthenticated) {
+                  window.location.href = '/assessment'
+                } else {
+                  openAuthModal('/assessment')
+                }
+              }}
+            >
               Take Assessment
-            </Link>
+            </button>
             <button className="btn-ghost" onClick={() => setIsScanModalOpen(true)}>
               <QrCode size={18} strokeWidth={2} />
               Verify Card
