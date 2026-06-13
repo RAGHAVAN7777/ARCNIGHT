@@ -68,9 +68,6 @@ export default function HeroSection() {
             variants={fadeUp}
             custom={0}
           >
-            <span className="pill-badge" style={{ marginBottom: 24, display: 'inline-flex' }}>
-              AI-Powered Financial Identity
-            </span>
           </motion.div>
 
           <motion.h1

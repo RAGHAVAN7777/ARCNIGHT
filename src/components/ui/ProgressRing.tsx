@@ -1,5 +1,5 @@
 import React from 'react'
-import { useInView } from 'framer-motion'
+import { useInView, animate } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 
 interface ProgressRingProps {
@@ -34,19 +34,14 @@ export default function ProgressRing({
 
   useEffect(() => {
     if (!inView) return
-    let startTime: number | null = null
-    let frameId: number
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const p = Math.min((timestamp - startTime) / 2000, 1)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setAnimatedScore(Math.round(eased * score))
-      if (p < 1) frameId = requestAnimationFrame(animate)
-    }
-
-    frameId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(frameId)
+    const controls = animate(animatedScore, score, {
+      duration: 0.6, // faster, snappier hover transition
+      ease: 'easeOut',
+      onUpdate: (value) => {
+        setAnimatedScore(Math.round(value))
+      }
+    })
+    return () => controls.stop()
   }, [inView, score])
 
   const getScoreColor = () => {
@@ -87,7 +82,6 @@ export default function ProgressRing({
           style={{
             transform: 'rotate(-90deg)',
             transformOrigin: '50% 50%',
-            transition: 'stroke-dashoffset 0.05s linear',
             filter: `drop-shadow(0 0 8px ${getScoreColor()}40)`,
           }}
         />

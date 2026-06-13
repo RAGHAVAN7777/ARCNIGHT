@@ -158,7 +158,7 @@ export default function ScoreEngineSection() {
                       top: '50%',
                       width: 2,
                       height: Math.sqrt(x * x + y * y) - 90,
-                      transform: `rotate(${factor.angle + 90}deg)`,
+                      transform: `rotate(${factor.angle}deg)`,
                       transformOrigin: '0 0',
                       pointerEvents: 'none',
                     }}

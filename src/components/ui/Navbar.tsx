@@ -55,25 +55,15 @@ export default function Navbar() {
     }}>
       {/* Logo */}
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ position: 'relative', width: 32, height: 32 }}>
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="8" stroke="#00E5C7" strokeWidth="2" fill="none" />
-            <circle cx="16" cy="16" r="4" fill="#00E5C7" />
-          </svg>
-          <div className="pulse-ring" style={{
-            position: 'absolute', inset: 0,
-            borderRadius: '50%',
-            border: '2px solid rgba(0, 229, 199, 0.4)',
-          }} />
-        </div>
         <span style={{
-          fontFamily: 'var(--font-heading)',
-          fontWeight: 700,
-          fontSize: '1.25rem',
+          fontFamily: "'Orbitron', sans-serif",
+          fontWeight: 900,
+          fontSize: '1.4rem',
           color: '#fff',
-          letterSpacing: '-0.02em',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
         }}>
-          Vishwas <span style={{ color: '#00E5C7' }}>AI</span>
+          VISHWAS <span style={{ color: '#00E5C7' }}>AI</span>
         </span>
       </Link>
 
