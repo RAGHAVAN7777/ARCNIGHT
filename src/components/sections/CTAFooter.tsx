@@ -69,7 +69,7 @@ export default function CTAFooter() {
             }}
           >
             Join thousands of Indians building their financial identity.
-            Start your free assessment today.
+            Take your assessment today.
           </motion.p>
 
           <motion.div
@@ -79,7 +79,7 @@ export default function CTAFooter() {
             transition={{ duration: 0.7, delay: 0.2 }}
           >
             <Link to="/assessment" className="btn-primary" style={{ fontSize: '1.05rem', padding: '16px 40px' }}>
-              Start Free Assessment
+              Take Assessment
               <ArrowRight size={20} strokeWidth={1.5} />
             </Link>
           </motion.div>

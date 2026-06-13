@@ -91,9 +91,6 @@ export default function Navbar() {
             {link.label}
           </a>
         ))}
-        <Link to="/assessment" className="btn-primary" style={{ padding: '10px 24px', fontSize: '0.85rem' }}>
-          Start Free Assessment
-        </Link>
       </div>
 
       {/* Mobile Hamburger */}
@@ -137,9 +134,6 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
-          <Link to="/assessment" className="btn-primary" style={{ textAlign: 'center' }}>
-            Start Free Assessment
-          </Link>
         </div>
       )}
     </nav>

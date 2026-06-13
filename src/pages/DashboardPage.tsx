@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts'
-import { Download, TrendingUp, Shield, AlertTriangle } from 'lucide-react'
+import { Download, TrendingUp, Shield, AlertTriangle, QrCode } from 'lucide-react'
 import ProgressRing from '../components/ui/ProgressRing'
 import GlassCard from '../components/ui/GlassCard'
+import GenerateCardModal from '../components/ui/GenerateCardModal'
 
 const factors = [
   { label: 'Income Stability', score: 85, weight: 25, color: '#00E5C7' },
@@ -32,6 +33,8 @@ const insights = [
 ]
 
 export default function DashboardPage() {
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -98,6 +101,23 @@ export default function DashboardPage() {
               strokeWidth={10}
               sublabel="Established · Low Risk"
             />
+            
+            <button 
+              onClick={() => setIsGenerateModalOpen(true)}
+              style={{
+                marginTop: 24, padding: '12px 20px', borderRadius: 8,
+                background: 'rgba(0, 229, 199, 0.1)', border: '1px solid rgba(0, 229, 199, 0.2)',
+                color: '#00E5C7', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8,
+                cursor: 'pointer', width: '100%', justifyContent: 'center',
+                transition: 'all 0.2s', fontWeight: 500
+              }}
+              onMouseOver={e => e.currentTarget.style.background = 'rgba(0, 229, 199, 0.15)'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(0, 229, 199, 0.1)'}
+            >
+              <QrCode size={16} />
+              Generate Access Card
+            </button>
+
             <div style={{
               display: 'flex',
               gap: 24,
@@ -293,6 +313,14 @@ export default function DashboardPage() {
           ))}
         </div>
       </motion.div>
+
+      <GenerateCardModal 
+        isOpen={isGenerateModalOpen} 
+        onClose={() => setIsGenerateModalOpen(false)}
+        userName="Rajesh Kumar"
+        score={770}
+        level="Established · Low Risk"
+      />
     </div>
   )
 }
