@@ -71,6 +71,8 @@ export default function AssessmentPage() {
     if (step > 0) {
       setDirection(-1)
       setStep(step - 1)
+    } else {
+      navigate('/')
     }
   }
 
@@ -459,14 +461,12 @@ export default function AssessmentPage() {
         }}>
           <button
             onClick={prev}
-            disabled={step === 0}
             className="btn-ghost"
             style={{
               padding: '10px 20px',
               borderRadius: 24,
               fontSize: '0.9rem',
-              opacity: step === 0 ? 0.3 : 1,
-              pointerEvents: step === 0 ? 'none' : 'auto',
+              transition: 'all 0.2s',
             }}
           >
             <ChevronLeft size={16} strokeWidth={2} />

@@ -2,8 +2,10 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ArrowRight, MessageCircle, Globe, ExternalLink, Mail } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 export default function CTAFooter() {
+  const { isAuthenticated, openAuthModal } = useAuth()
   return (
     <>
       {/* CTA Band */}
@@ -78,10 +80,21 @@ export default function CTAFooter() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            <Link to="/assessment" className="btn-primary" style={{ fontSize: '1.05rem', padding: '16px 40px' }}>
+            <button 
+              className="btn-primary" 
+              style={{ fontSize: '1.05rem', padding: '16px 40px' }}
+              onClick={(e) => {
+                e.preventDefault()
+                if (isAuthenticated) {
+                  window.location.href = '/assessment'
+                } else {
+                  openAuthModal('/assessment')
+                }
+              }}
+            >
               Take Assessment
               <ArrowRight size={20} strokeWidth={1.5} />
-            </Link>
+            </button>
           </motion.div>
         </div>
       </section>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import { LogOut, User } from 'lucide-react'
 
 const navLinks = [
   { label: 'How It Works', href: '/#how-it-works' },
@@ -12,6 +14,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
+  const { isAuthenticated, user, openAuthModal, logout } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50)
@@ -91,6 +94,21 @@ export default function Navbar() {
             {link.label}
           </a>
         ))}
+        
+        {isAuthenticated ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Link to="/dashboard" className="btn-primary" style={{ padding: '8px 24px', fontSize: '0.9rem' }}>
+              Go to Dashboard
+            </Link>
+            <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <LogOut size={18} />
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => openAuthModal()} className="btn-primary" style={{ padding: '8px 24px', fontSize: '0.9rem' }}>
+            Log In
+          </button>
+        )}
       </div>
 
       {/* Mobile Hamburger */}
@@ -134,6 +152,22 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
+          {isAuthenticated ? (
+            <>
+              <Link to="/dashboard" className="btn-primary" style={{ justifyContent: 'center' }}>
+                Go to Dashboard
+              </Link>
+              <button onClick={logout} style={{ color: '#E5484D', fontSize: '1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', marginTop: 8 }}>
+                <LogOut size={18} />
+                Log Out
+              </button>
+            </>
+          ) : (
+            <button onClick={() => openAuthModal()} className="btn-primary" style={{ justifyContent: 'center' }}>
+              Log In / Sign Up
+            </button>
+          )}
         </div>
       )}
     </nav>

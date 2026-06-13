@@ -9,6 +9,8 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const SimulatorPage = lazy(() => import('./pages/SimulatorPage'))
 const SchemesPage = lazy(() => import('./pages/SchemesPage'))
 
+import { AuthProvider } from './context/AuthContext'
+
 function PageLoader() {
   return (
     <div className="flex items-center justify-center" style={{ minHeight: '100vh', background: '#0A0E17' }}>
@@ -26,18 +28,20 @@ function PageLoader() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="noise-overlay" />
-      <CustomCursor />
-      <Navbar />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/assessment" element={<AssessmentPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/simulator" element={<SimulatorPage />} />
-          <Route path="/schemes" element={<SchemesPage />} />
-        </Routes>
-      </Suspense>
+      <AuthProvider>
+        <div className="noise-overlay" />
+        <CustomCursor />
+        <Navbar />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/assessment" element={<AssessmentPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/simulator" element={<SimulatorPage />} />
+            <Route path="/schemes" element={<SchemesPage />} />
+          </Routes>
+        </Suspense>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
