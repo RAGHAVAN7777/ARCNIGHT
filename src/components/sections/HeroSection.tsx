@@ -1,8 +1,9 @@
-import React, { lazy, Suspense } from 'react'
+import React, { lazy, Suspense, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Play } from 'lucide-react'
+import { Play, QrCode } from 'lucide-react'
 import AnimatedCounter from '../ui/AnimatedCounter'
+import ScanCardModal from '../ui/ScanCardModal'
 
 const ScoreOrb3D = lazy(() => import('../three/ScoreOrb3D'))
 
@@ -22,6 +23,8 @@ const stats = [
 ]
 
 export default function HeroSection() {
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false)
+
   return (
     <section
       id="hero"
@@ -115,11 +118,11 @@ export default function HeroSection() {
             style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 48 }}
           >
             <Link to="/assessment" className="btn-primary">
-              Start My Assessment
+              Take Assessment
             </Link>
-            <button className="btn-ghost">
-              <Play size={18} strokeWidth={2} />
-              Watch Demo
+            <button className="btn-ghost" onClick={() => setIsScanModalOpen(true)}>
+              <QrCode size={18} strokeWidth={2} />
+              Verify Card
             </button>
           </motion.div>
 
@@ -225,6 +228,7 @@ export default function HeroSection() {
         </div>
         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Scroll</span>
       </div>
+      <ScanCardModal isOpen={isScanModalOpen} onClose={() => setIsScanModalOpen(false)} />
     </section>
   )
 }
