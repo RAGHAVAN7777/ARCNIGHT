@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion'
 import { Mic, ScanLine, BarChart3, TrendingUp } from 'lucide-react'
 import GlassCard from '../ui/GlassCard'
 
@@ -83,10 +83,10 @@ function MiniMockup({ type }: { type: string }) {
             <ScanLine size={20} color="#00E5C7" strokeWidth={1.5} />
           </div>
           <motion.div
-            animate={{ top: ['20%', '80%', '20%'] }}
+            animate={{ y: ['-40px', '40px', '-40px'] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             style={{
-              position: 'absolute', left: '10%', right: '10%', height: 2,
+              position: 'absolute', top: '50%', left: '10%', right: '10%', height: 2,
               background: 'linear-gradient(90deg, transparent, #00E5C7, transparent)',
             }}
           />
@@ -150,9 +150,10 @@ export default function HowItWorksSection() {
   const containerRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ['start end', 'end start'],
+    offset: ['start center', 'end center'], // Better offset for timeline
   })
-  const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1])
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 80, damping: 20 })
+  const lineScale = useTransform(smoothProgress, [0, 1], [0, 1])
 
   return (
     <section id="how-it-works" ref={containerRef} style={{ padding: '120px 0', position: 'relative' }}>

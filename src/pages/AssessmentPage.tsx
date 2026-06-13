@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Globe, Mic, Upload, FileText, Check } from 'lucide-react'
 import GlassCard from '../components/ui/GlassCard'
 
@@ -46,6 +47,7 @@ export default function AssessmentPage() {
   const [selectedLang, setSelectedLang] = useState('')
   const [chatIndex, setChatIndex] = useState(2)
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
+  const navigate = useNavigate()
 
   const totalSteps = 3
   const progress = ((step + 1) / totalSteps) * 100
@@ -54,6 +56,8 @@ export default function AssessmentPage() {
     if (step < totalSteps - 1) {
       setDirection(1)
       setStep(step + 1)
+    } else {
+      navigate('/dashboard')
     }
   }
 
