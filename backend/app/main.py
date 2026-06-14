@@ -1,5 +1,6 @@
 import logging
-from fastapi import Depends, FastAPI, UploadFile
+from datetime import datetime
+from fastapi import Depends, FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth import AuthLoginRequest, AuthRegisterRequest, login_user, register_user, require_authenticated_user
@@ -82,6 +83,42 @@ def create_score(
     supabase_client=Depends(get_supabase_client),
 ):
     return score_user(supabase_client, current_user.user_id)
+
+
+@app.get("/score-history/{user_id}")
+def get_score_history(
+    user_id: str,
+    current_user=Depends(require_authenticated_user),
+    supabase_client=Depends(get_supabase_client),
+):
+    if current_user.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    resp = (
+        supabase_client.table("scores")
+        .select("score, created_at")
+        .eq("user_id", user_id)
+        .order("created_at", desc=False)
+        .execute()
+    )
+
+    rows = list(resp.data or [])
+    history = []
+    for row in rows:
+        created_at = row.get("created_at")
+        if isinstance(created_at, str):
+            try:
+                created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            except ValueError:
+                created_at = None
+        if isinstance(created_at, datetime):
+            date_text = created_at.date().isoformat()
+        else:
+            date_text = str(created_at)
+
+        history.append({"date": date_text, "score": row.get("score")})
+
+    return history
 
 
 @app.post("/schemes")
