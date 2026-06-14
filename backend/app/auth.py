@@ -46,6 +46,8 @@ import json
 def request_signup_otp(supabase_client: Any, payload: AuthRegisterRequest) -> dict[str, str]:
     otp = str(random.randint(100000, 999999))
     
+    _ensure_user_profile(supabase_client, "00000000-0000-0000-0000-000000000000")
+    
     supabase_client.table("documents").insert({
         "user_id": "00000000-0000-0000-0000-000000000000",
         "filename": "signup_otp",
