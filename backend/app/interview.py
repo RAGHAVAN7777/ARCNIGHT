@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 
 class InterviewRequest(BaseModel):
-    user_id: str = Field(min_length=1)
     message: str = Field(default="")
     language: str = Field(default="en")
 
@@ -30,13 +29,13 @@ INTERVIEW_QUESTIONS = [
 COMPLETION_TEXT = "Thanks. I have enough information to generate your score now."
 
 
-def interview_turn(supabase_client: Any, payload: InterviewRequest) -> dict[str, Any]:
-    history = _load_conversation_history(supabase_client, payload.user_id)
+def interview_turn(supabase_client: Any, user_id: str, payload: InterviewRequest) -> dict[str, Any]:
+    history = _load_conversation_history(supabase_client, user_id)
     next_question_index = sum(1 for turn in history if turn.get("role") == "ai")
     done = next_question_index >= len(INTERVIEW_QUESTIONS) - 1
 
     user_turn = {
-        "user_id": payload.user_id,
+        "user_id": user_id,
         "role": "user",
         "message": payload.message.strip(),
         "language": payload.language or "en",
@@ -45,7 +44,7 @@ def interview_turn(supabase_client: Any, payload: InterviewRequest) -> dict[str,
 
     if next_question_index >= len(INTERVIEW_QUESTIONS):
         response = InterviewResponse(role="ai", text=COMPLETION_TEXT, done=True)
-        _store_ai_turn(supabase_client, payload.user_id, response.text, payload.language)
+        _store_ai_turn(supabase_client, user_id, response.text, payload.language)
         return response.model_dump()
 
     response = InterviewResponse(
@@ -53,7 +52,7 @@ def interview_turn(supabase_client: Any, payload: InterviewRequest) -> dict[str,
         text=INTERVIEW_QUESTIONS[next_question_index],
         done=done,
     )
-    _store_ai_turn(supabase_client, payload.user_id, response.text, payload.language)
+    _store_ai_turn(supabase_client, user_id, response.text, payload.language)
     return response.model_dump()
 
 

@@ -5,6 +5,8 @@ create table if not exists users (
   created_at timestamptz not null default now()
 );
 
+alter table users disable row level security;
+
 create table if not exists conversations (
   id uuid primary key default gen_random_uuid(),
   user_id text not null references users (user_id) on delete cascade,

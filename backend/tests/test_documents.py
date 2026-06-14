@@ -3,7 +3,6 @@ from copy import deepcopy
 
 from fastapi.testclient import TestClient
 
-from app.interview import INTERVIEW_QUESTIONS
 from app.main import app
 from app.supabase_client import get_supabase_client
 
@@ -56,7 +55,7 @@ class FakeTable:
 
 class FakeSupabaseClient:
     def __init__(self):
-        self.tables = {"conversations": [], "users": []}
+        self.tables = {"documents": [], "users": []}
         self.auth = type(
             "FakeAuth",
             (),
@@ -71,7 +70,7 @@ class FakeSupabaseClient:
         return FakeTable(self, table_name)
 
 
-class InterviewEndpointTests(unittest.TestCase):
+class DocumentUploadTests(unittest.TestCase):
     def setUp(self):
         self.client = FakeSupabaseClient()
         app.dependency_overrides[get_supabase_client] = lambda: self.client
@@ -80,48 +79,20 @@ class InterviewEndpointTests(unittest.TestCase):
     def tearDown(self):
         app.dependency_overrides.clear()
 
-    def test_first_turn_returns_first_question_and_persists_both_turns(self):
+    def test_upload_returns_verified_stub_and_persists_document(self):
         response = self.http.post(
-            "/interview",
-            json={"message": "I run a small shop", "language": "en"},
+            "/documents/upload",
             headers={"Authorization": "Bearer token-user-1"},
+            files={"file": ("income-proof.pdf", b"fake pdf bytes", "application/pdf")},
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"role": "ai", "text": INTERVIEW_QUESTIONS[0], "done": False})
-        self.assertEqual(len(self.client.tables["conversations"]), 2)
-        self.assertEqual(self.client.tables["conversations"][0]["role"], "user")
-        self.assertEqual(self.client.tables["conversations"][1]["role"], "ai")
-
-    def test_final_turn_sets_done_true(self):
-        for index, question in enumerate(INTERVIEW_QUESTIONS[:-1]):
-            response = self.http.post(
-                "/interview",
-                json={"message": f"answer {index}", "language": "en"},
-                headers={"Authorization": "Bearer token-user-1"},
-            )
-            self.assertEqual(response.json(), {"role": "ai", "text": question, "done": False})
-
-        final_response = self.http.post(
-            "/interview",
-            json={"message": "final answer", "language": "en"},
-            headers={"Authorization": "Bearer token-user-1"},
-        )
-
         self.assertEqual(
-            final_response.json(),
-            {"role": "ai", "text": INTERVIEW_QUESTIONS[-1], "done": True},
+            response.json(),
+            {"filename": "income-proof.pdf", "status": "verified", "extracted_data": {}},
         )
-
-        completion_response = self.http.post(
-            "/interview",
-            json={"message": "one more", "language": "en"},
-            headers={"Authorization": "Bearer token-user-1"},
-        )
-        self.assertEqual(
-            completion_response.json(),
-            {"role": "ai", "text": "Thanks. I have enough information to generate your score now.", "done": True},
-        )
+        self.assertEqual(len(self.client.tables["documents"]), 1)
+        self.assertEqual(self.client.tables["documents"][0]["filename"], "income-proof.pdf")
 
 
 if __name__ == "__main__":

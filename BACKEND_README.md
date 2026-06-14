@@ -61,7 +61,36 @@ The frontend has 5 pages, currently running on hardcoded mock data:
 - Even a stub (`status: "verified"` always) is fine for demo — real OCR via Gemini multimodal is a stretch goal
 - **Stop for review.**
 
-### Phase 4: Scoring Agent (powers `DashboardPage`)
+### Phase 4: Supabase Authentication (powers new Login UI)
+Supabase Auth handles all credential management — no custom JWT logic needed.
+
+**Backend:**
+- Enable Email/Password auth in Supabase dashboard → Authentication → Providers
+- Two endpoints:
+```json
+POST /auth/register
+// Request
+{ "email": "string", "password": "string", "full_name": "string" }
+// Response
+{ "user_id": "string", "email": "string", "message": "Registration successful" }
+
+POST /auth/login
+// Request
+{ "email": "string", "password": "string" }
+// Response
+{ "access_token": "string", "user_id": "string" }
+```
+- All subsequent endpoints (`/interview`, `/score`, `/schemes`) must accept `Authorization: Bearer <token>` header and verify via Supabase before processing
+- `user_id` is now extracted from the verified token, not passed in the request body
+
+**Frontend:**
+- Wire Login/Register pages to `POST /auth/login` and `POST /auth/register`
+- Store `access_token` in localStorage on login, attach as `Authorization` header on every API call
+- Replace temporary hardcoded `user_id` with the real one from the token
+
+**Stop here for review before Phase 5.**
+
+### Phase 5: Scoring Agent (powers `DashboardPage`)
 `POST /score`
 ```json
 // Request
@@ -96,7 +125,7 @@ The frontend has 5 pages, currently running on hardcoded mock data:
 - Store result in `scores` table with timestamp (enables history for demo)
 - **Stop for review.**
 
-### Phase 5: Schemes Matching (powers `SchemesPage`)
+### Phase 6: Schemes Matching (powers `SchemesPage`)
 `GET /schemes?user_id={id}`
 ```json
 // Response — array matching allSchemes shape
@@ -117,7 +146,7 @@ The frontend has 5 pages, currently running on hardcoded mock data:
 - `eligible` + `matchScore` computed from user's score/factors (e.g. score > threshold per scheme)
 - **Stop for review.**
 
-### Phase 6: Score History (for before/after demo)
+### Phase 7: Score History (for before/after demo)
 `GET /score-history/{user_id}`
 ```json
 [
@@ -128,9 +157,36 @@ The frontend has 5 pages, currently running on hardcoded mock data:
 - Seed script creates a "30 days ago" and "today" entry for demo user
 - **Stop for review.**
 
----
+### Phase 8: Frontend Integration & Demo Readiness
+This phase makes the whole project actually work end-to-end, not just the backend in isolation.
 
-## What NOT to do
+**CORS:**
+- Add `CORSMiddleware` to FastAPI, allowing the frontend's dev origin (`http://localhost:5173` for Vite) and credentials.
+
+**Frontend wiring:**
+- In `AssessmentPage.tsx`: replace the hardcoded `chatMessages` array with real calls to `POST /interview` — send user's typed response, append the returned `{role, text}` to the chat, stop when `done: true`.
+- In `DashboardPage.tsx`: replace `factors`, `breakdownData`, `insights`, and the score=770 with a `useEffect` call to `POST /score` on page load, store result in state, render from that.
+- In `SchemesPage.tsx`: replace `allSchemes` with a `useEffect` call to `GET /schemes?user_id=...` on page load.
+- `SimulatorPage.tsx`: leave as-is (pure frontend math, no backend needed).
+- Add a simple `user_id` — for the hackathon demo, a hardcoded/generated UUID stored in localStorage on first visit is sufficient (no full auth needed).
+
+**Environment:**
+- Frontend needs a `VITE_API_URL` env var (e.g. `http://localhost:8000`) pointing to the backend, used in all fetch calls — add `.env.example` in frontend root too.
+
+**End-to-end test:**
+- Run both frontend (`npm run dev`) and backend (`uvicorn`) together
+- Walk through: select language → complete interview → see dashboard with real score → see schemes filtered by real eligibility
+- Fix any shape mismatches that appear (this is why Phase 4-5 contracts were matched to frontend exactly, but double-check at integration time)
+
+**Stop for review** — at this point, do a full demo run-through together before the hackathon.
+
+## Deployment (Optional — discuss before doing)
+For a judge-accessible live link rather than localhost-only demo:
+- Backend: Render or Railway (free tier) — set `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `GEMINI_API_KEY` as env vars there
+- Frontend: Vercel/Netlify — set `VITE_API_URL` to the deployed backend URL
+- Update FastAPI CORS to allow the deployed frontend's URL too
+
+
 - Don't touch `SimulatorPage` — its projection math is pure frontend, leave as-is unless asked
 - Don't add Redis/Celery/Spring Boot
 - Don't build voice/audio — text only

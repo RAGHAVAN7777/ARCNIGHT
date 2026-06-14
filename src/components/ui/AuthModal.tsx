@@ -2,14 +2,14 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock, Mail, User, Shield } from 'lucide-react'
 import GlassCard from './GlassCard'
+import { useAuth } from '../../context/AuthContext'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
-  onLogin: (username: string) => void
 }
 
-export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
+export default function AuthModal({ isOpen, onClose }: Props) {
   const [isLogin, setIsLogin] = useState(true)
   const [formData, setFormData] = useState({
     name: '',
@@ -19,15 +19,18 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const { login, register } = useAuth()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
     setError('')
+    setSuccessMessage('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (isLogin) {
       if (!formData.email || !formData.password) {
         setError('Please enter both email and password.')
@@ -45,12 +48,25 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
     }
 
     setIsLoading(true)
-    // Simulate network request
-    await new Promise(r => setTimeout(r, 1000))
-    setIsLoading(false)
-    
-    // In a real app we'd validate against a backend
-    onLogin(isLogin ? formData.email.split('@')[0] : formData.name)
+    try {
+      if (isLogin) {
+        await login(formData.email, formData.password)
+      } else {
+        await register(formData.email, formData.password, formData.name)
+        setSuccessMessage('Registration successful. You can now log in.')
+        setIsLogin(true)
+        setFormData(prev => ({
+          ...prev,
+          password: '',
+          confirmPassword: '',
+        }))
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Authentication failed'
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const toggleMode = () => {
@@ -124,14 +140,15 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
                 )}
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 8 }}>Email or Phone</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 8 }}>Email</label>
                   <div style={{ position: 'relative' }}>
                     <Mail size={18} color="var(--color-text-muted)" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
                     <input 
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder={isLogin ? 'Enter your email or phone' : 'e.g. rajesh@example.com'}
+                      type="email"
+                      placeholder="e.g. rajesh@example.com"
                       style={{
                         width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
                         padding: '12px 16px 12px 44px', borderRadius: 8, color: '#fff', fontSize: '0.95rem'
@@ -180,6 +197,10 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
 
                 {error && (
                   <div style={{ color: '#E5484D', fontSize: '0.85rem', textAlign: 'center', marginTop: 4 }}>{error}</div>
+                )}
+
+                {successMessage && (
+                  <div style={{ color: '#00E5C7', fontSize: '0.85rem', textAlign: 'center', marginTop: 4 }}>{successMessage}</div>
                 )}
 
                 <button 
