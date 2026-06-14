@@ -16,6 +16,8 @@ create table if not exists conversations (
   created_at timestamptz not null default now()
 );
 
+alter table conversations disable row level security;
+
 create table if not exists scores (
   id uuid primary key default gen_random_uuid(),
   user_id text not null references users (user_id) on delete cascade,
@@ -29,6 +31,8 @@ create table if not exists scores (
   created_at timestamptz not null default now()
 );
 
+alter table scores disable row level security;
+
 create table if not exists documents (
   id uuid primary key default gen_random_uuid(),
   user_id text not null references users (user_id) on delete cascade,
@@ -37,3 +41,5 @@ create table if not exists documents (
   extracted_data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+alter table documents disable row level security;
