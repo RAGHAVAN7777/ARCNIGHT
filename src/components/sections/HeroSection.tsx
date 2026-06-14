@@ -25,7 +25,7 @@ const stats = [
 
 export default function HeroSection() {
   const [isScanModalOpen, setIsScanModalOpen] = useState(false)
-  const { isAuthenticated, openAuthModal } = useAuth()
+  const { isAuthenticated, openAuthModal, hasCompletedAssessment } = useAuth()
 
   return (
     <section
@@ -124,13 +124,13 @@ export default function HeroSection() {
               onClick={(e) => {
                 e.preventDefault()
                 if (isAuthenticated) {
-                  window.location.href = '/assessment'
+                  window.location.href = hasCompletedAssessment ? '/dashboard' : '/assessment'
                 } else {
                   openAuthModal('/assessment')
                 }
               }}
             >
-              Take Assessment
+              {hasCompletedAssessment ? 'Go to Dashboard' : 'Take Assessment'}
             </button>
             <button className="btn-ghost" onClick={() => setIsScanModalOpen(true)}>
               <QrCode size={18} strokeWidth={2} />

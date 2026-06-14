@@ -16,7 +16,7 @@ interface Props {
 const consents = [
   "I confirm this data is accurate",
   "I authorize sharing my score via QR code",
-  "I understand this card is valid for 30 days",
+  "I understand this card is valid for 1 year",
   "I consent to PIN-based access verification",
   "I agree to Vishwas AI's data usage terms"
 ]
@@ -27,6 +27,9 @@ export default function GenerateCardModal({ isOpen, onClose, userName, score, le
   const [confirmPin, setConfirmPin] = useState('')
   const [step, setStep] = useState<'form' | 'generating' | 'success'>('form')
   const [accessId, setAccessId] = useState('')
+  const [otpStep, setOtpStep] = useState<'none' | 'request' | 'verify'>('none')
+  const [otp, setOtp] = useState('')
+  const [otpError, setOtpError] = useState('')
   
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -38,6 +41,20 @@ export default function GenerateCardModal({ isOpen, onClose, userName, score, le
       setConfirmPin('')
       setStep('form')
       setAccessId('')
+      setOtpStep('none')
+      setOtp('')
+      setOtpError('')
+
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+      const token = sessionStorage.getItem('vishwas_access_token')
+      fetch(`${apiBaseUrl}/cards/status`, {
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.has_card) setOtpStep('request')
+      })
+      .catch(console.error)
     }
   }, [isOpen])
 
@@ -53,12 +70,62 @@ export default function GenerateCardModal({ isOpen, onClose, userName, score, le
 
   const handleGenerate = async () => {
     setStep('generating')
-    // Simulate backend POST /api/access-card
-    await new Promise(r => setTimeout(r, 1200))
-    
-    const newAccessId = crypto.randomUUID()
-    setAccessId(newAccessId)
-    setStep('success')
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+    const token = sessionStorage.getItem('vishwas_access_token')
+
+    try {
+      const res = await fetch(`${apiBaseUrl}/cards/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ user_name: userName, score, level, pin })
+      })
+      if (!res.ok) throw new Error('Failed to generate card')
+      const data = await res.json()
+      setAccessId(data.card_id)
+      setStep('success')
+    } catch (err) {
+      console.error(err)
+      setStep('form')
+    }
+  }
+
+  const handleRequestOtp = async () => {
+    setOtpStep('verify')
+    setOtpError('')
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+    const token = sessionStorage.getItem('vishwas_access_token')
+    try {
+      await fetch(`${apiBaseUrl}/cards/request-otp`, {
+        method: 'POST',
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleVerifyOtp = async () => {
+    if (!otp) return
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+    const token = sessionStorage.getItem('vishwas_access_token')
+    try {
+      const res = await fetch(`${apiBaseUrl}/cards/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ otp })
+      })
+      if (!res.ok) throw new Error('Invalid OTP')
+      setOtpStep('none')
+      setOtpError('')
+    } catch (err) {
+      setOtpError('Invalid OTP. Please try again.')
+    }
   }
 
   const handleDownload = async () => {
@@ -77,7 +144,7 @@ export default function GenerateCardModal({ isOpen, onClose, userName, score, le
   // Masked name "Rajesh Kumar" -> "R***** K****"
   const maskedName = userName.split(' ').map(part => part[0] + '*'.repeat(part.length - 1)).join(' ')
   const issueDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-  const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  const expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 
   return (
     <AnimatePresence>
@@ -119,7 +186,45 @@ export default function GenerateCardModal({ isOpen, onClose, userName, score, le
                 </h2>
               </div>
 
-              {step === 'form' && (
+              {otpStep === 'request' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, textAlign: 'center' }}>
+                  <Shield size={48} color="#F5B82E" style={{ margin: '0 auto' }} />
+                  <h3 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-heading)', fontWeight: 600 }}>Active Card Found</h3>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+                    You already have an active access card. To regenerate it, we need to verify your identity via email OTP.
+                  </p>
+                  <button className="btn-primary" onClick={handleRequestOtp} style={{ justifyContent: 'center' }}>
+                    Send OTP to Email
+                  </button>
+                </div>
+              )}
+
+              {otpStep === 'verify' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, textAlign: 'center' }}>
+                  <h3 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-heading)', fontWeight: 600 }}>Verify OTP</h3>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+                    Enter the 6-digit code sent to your email.
+                  </p>
+                  <input 
+                    type="text" 
+                    maxLength={6}
+                    value={otp}
+                    onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="------"
+                    style={{
+                      width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                      padding: '12px 16px', borderRadius: 8, color: '#fff', fontSize: '1.5rem', letterSpacing: 8,
+                      fontFamily: 'monospace', textAlign: 'center'
+                    }}
+                  />
+                  {otpError && <div style={{ color: '#E5484D', fontSize: '0.85rem' }}>{otpError}</div>}
+                  <button className="btn-primary" onClick={handleVerifyOtp} disabled={otp.length !== 6} style={{ justifyContent: 'center', opacity: otp.length === 6 ? 1 : 0.5 }}>
+                    Verify & Regenerate
+                  </button>
+                </div>
+              )}
+
+              {otpStep === 'none' && step === 'form' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {consents.map((text, i) => (

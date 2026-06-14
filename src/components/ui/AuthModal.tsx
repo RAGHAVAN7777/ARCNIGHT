@@ -2,15 +2,17 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock, Mail, User, Shield } from 'lucide-react'
 import GlassCard from './GlassCard'
+import { useAuth } from '../../context/AuthContext'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
-  onLogin: (username: string) => void
 }
 
-export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
+export default function AuthModal({ isOpen, onClose }: Props) {
   const [isLogin, setIsLogin] = useState(true)
+  const [step, setStep] = useState<'form' | 'otp'>('form')
+  const [otp, setOtp] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,43 +21,76 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const { login, register, registerVerify } = useAuth()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
     setError('')
+    setSuccessMessage('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (isLogin) {
       if (!formData.email || !formData.password) {
         setError('Please enter both email and password.')
         return
       }
     } else {
-      if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-        setError('Please fill in all fields.')
-        return
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match.')
-        return
+      if (step === 'form') {
+        if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+          setError('Please fill in all fields.')
+          return
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match.')
+          return
+        }
+      } else {
+        if (otp.length !== 6) {
+          setError('Please enter a valid 6-digit OTP.')
+          return
+        }
       }
     }
 
     setIsLoading(true)
-    // Simulate network request
-    await new Promise(r => setTimeout(r, 1000))
-    setIsLoading(false)
-    
-    // In a real app we'd validate against a backend
-    onLogin(isLogin ? formData.email.split('@')[0] : formData.name)
+    try {
+      if (isLogin) {
+        await login(formData.email, formData.password)
+      } else {
+        if (step === 'form') {
+          await register(formData.email, formData.password, formData.name)
+          setStep('otp')
+          setSuccessMessage('OTP sent to your email. Please verify.')
+        } else {
+          await registerVerify(formData.email, formData.password, formData.name, otp)
+          setSuccessMessage('Registration successful. You can now log in.')
+          setIsLogin(true)
+          setStep('form')
+          setOtp('')
+          setFormData(prev => ({
+            ...prev,
+            password: '',
+            confirmPassword: '',
+          }))
+        }
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Authentication failed'
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const toggleMode = () => {
     setIsLogin(!isLogin)
     setError('')
+    setStep('form')
+    setOtp('')
     setFormData({ name: '', email: '', password: '', confirmPassword: '' })
   }
 
@@ -104,7 +139,28 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
               </div>
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {!isLogin && (
+                {!isLogin && step === 'otp' ? (
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-heading)', fontWeight: 600, textAlign: 'center', marginBottom: 12 }}>Verify OTP</h3>
+                    <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', textAlign: 'center', marginBottom: 24 }}>
+                      Enter the 6-digit code sent to your email.
+                    </p>
+                    <input 
+                      type="text" 
+                      maxLength={6}
+                      value={otp}
+                      onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="------"
+                      style={{
+                        width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                        padding: '12px 16px', borderRadius: 8, color: '#fff', fontSize: '1.5rem', letterSpacing: 8,
+                        fontFamily: 'monospace', textAlign: 'center'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {!isLogin && (
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 8 }}>Full Name</label>
                     <div style={{ position: 'relative' }}>
@@ -124,20 +180,26 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
                 )}
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 8 }}>Email or Phone</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 8 }}>Email</label>
                   <div style={{ position: 'relative' }}>
                     <Mail size={18} color="var(--color-text-muted)" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
                     <input 
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder={isLogin ? 'Enter your email or phone' : 'e.g. rajesh@example.com'}
+                      type="email"
+                      placeholder="e.g. rajesh@example.com"
                       style={{
                         width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
                         padding: '12px 16px 12px 44px', borderRadius: 8, color: '#fff', fontSize: '0.95rem'
                       }}
                     />
                   </div>
+                  {!isLogin && (
+                    <p style={{ fontSize: '0.75rem', color: '#F5B82E', marginTop: 8, lineHeight: 1.4 }}>
+                      Note: Please enter a valid, currently active email. Invalid emails will cause trouble during the access card regeneration process.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -177,9 +239,15 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
                     </div>
                   </div>
                 )}
+                </>
+              )}
 
                 {error && (
                   <div style={{ color: '#E5484D', fontSize: '0.85rem', textAlign: 'center', marginTop: 4 }}>{error}</div>
+                )}
+
+                {successMessage && (
+                  <div style={{ color: '#00E5C7', fontSize: '0.85rem', textAlign: 'center', marginTop: 4 }}>{successMessage}</div>
                 )}
 
                 <button 
@@ -188,7 +256,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }: Props) {
                   disabled={isLoading}
                   style={{ width: '100%', justifyContent: 'center', marginTop: 8, opacity: isLoading ? 0.7 : 1 }}
                 >
-                  {isLoading ? 'Processing...' : (isLogin ? 'Log In' : 'Create Account')}
+                  {isLoading ? 'Processing...' : (isLogin ? 'Log In' : (step === 'otp' ? 'Verify & Create Account' : 'Create Account'))}
                 </button>
               </form>
 

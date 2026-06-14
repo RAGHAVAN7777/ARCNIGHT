@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useAuth } from '../context/AuthContext'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts'
 import { Download, TrendingUp, Shield, AlertTriangle, QrCode } from 'lucide-react'
 import ProgressRing from '../components/ui/ProgressRing'
@@ -34,6 +35,34 @@ const insights = [
 
 export default function DashboardPage() {
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
+  const [hasCard, setHasCard] = useState(false)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+    const token = sessionStorage.getItem('vishwas_access_token')
+    if (token) {
+      fetch(`${apiBaseUrl}/cards/status`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        setHasCard(data.has_card)
+      })
+      .catch(console.error)
+    }
+  }, [user, isGenerateModalOpen])
+
+  const displayName = user?.username || 'User'
+  
+  const userScore = useMemo(() => {
+    if (!user?.username) return 770;
+    let hash = 0;
+    for (let i = 0; i < user.username.length; i++) {
+      hash = user.username.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return 600 + (Math.abs(hash) % 251);
+  }, [user?.username]);
 
   return (
     <div style={{
@@ -64,7 +93,7 @@ export default function DashboardPage() {
             fontSize: '2rem',
             marginBottom: 4,
           }}>
-            Rajesh Kumar's Score Dashboard
+            {displayName}'s Score Dashboard
           </h1>
           <p style={{ color: 'var(--color-text-secondary)' }}>
             Kirana Shop Owner · Jayanagar, Bangalore · Assessment completed June 13, 2026
@@ -96,26 +125,27 @@ export default function DashboardPage() {
             padding: 40,
           }}>
             <ProgressRing
-              score={770}
+              score={userScore}
               size={220}
               strokeWidth={10}
-              sublabel="Established · Low Risk"
+              sublabel={userScore > 750 ? "Established · Low Risk" : userScore > 650 ? "Growing · Medium Risk" : "New · High Risk"}
             />
             
             <button 
               onClick={() => setIsGenerateModalOpen(true)}
               style={{
                 marginTop: 24, padding: '12px 20px', borderRadius: 8,
-                background: 'rgba(0, 229, 199, 0.1)', border: '1px solid rgba(0, 229, 199, 0.2)',
-                color: '#00E5C7', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8,
+                background: hasCard ? 'rgba(245, 184, 46, 0.1)' : 'rgba(0, 229, 199, 0.1)', 
+                border: hasCard ? '1px solid rgba(245, 184, 46, 0.2)' : '1px solid rgba(0, 229, 199, 0.2)',
+                color: hasCard ? '#F5B82E' : '#00E5C7', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8,
                 cursor: 'pointer', width: '100%', justifyContent: 'center',
                 transition: 'all 0.2s', fontWeight: 500
               }}
-              onMouseOver={e => e.currentTarget.style.background = 'rgba(0, 229, 199, 0.15)'}
-              onMouseOut={e => e.currentTarget.style.background = 'rgba(0, 229, 199, 0.1)'}
+              onMouseOver={e => e.currentTarget.style.background = hasCard ? 'rgba(245, 184, 46, 0.15)' : 'rgba(0, 229, 199, 0.15)'}
+              onMouseOut={e => e.currentTarget.style.background = hasCard ? 'rgba(245, 184, 46, 0.1)' : 'rgba(0, 229, 199, 0.1)'}
             >
               <QrCode size={16} />
-              Generate Access Card
+              {hasCard ? 'Lost Card? Regenerate it' : 'Generate Access Card'}
             </button>
 
             <div style={{
@@ -317,9 +347,9 @@ export default function DashboardPage() {
       <GenerateCardModal 
         isOpen={isGenerateModalOpen} 
         onClose={() => setIsGenerateModalOpen(false)}
-        userName="Rajesh Kumar"
-        score={770}
-        level="Established · Low Risk"
+        userName={displayName}
+        score={userScore}
+        level={userScore > 750 ? "Established · Low Risk" : userScore > 650 ? "Growing · Medium Risk" : "New · High Risk"}
       />
     </div>
   )

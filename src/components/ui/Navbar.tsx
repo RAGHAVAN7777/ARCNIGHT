@@ -14,7 +14,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
-  const { isAuthenticated, user, openAuthModal, logout } = useAuth()
+  const { isAuthenticated, user, openAuthModal, logout, hasCompletedAssessment } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50)
@@ -97,10 +97,19 @@ export default function Navbar() {
         
         {isAuthenticated ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Link to="/dashboard" className="btn-primary" style={{ padding: '8px 24px', fontSize: '0.9rem' }}>
-              Go to Dashboard
-            </Link>
-            <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <span style={{ color: 'var(--color-text-primary, #fff)', fontSize: '0.95rem', fontWeight: 500 }}>
+              Hi, <span style={{ color: '#00E5C7' }}>{user?.username}</span>
+            </span>
+            {hasCompletedAssessment ? (
+              <Link to="/dashboard" className="btn-primary" style={{ padding: '8px 24px', fontSize: '0.9rem' }}>
+                Dashboard
+              </Link>
+            ) : (
+              <Link to="/assessment" className="btn-primary" style={{ padding: '8px 24px', fontSize: '0.9rem' }}>
+                Take Test
+              </Link>
+            )}
+            <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted, #a1a1aa)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Log Out">
               <LogOut size={18} />
             </button>
           </div>
@@ -155,9 +164,18 @@ export default function Navbar() {
           <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
           {isAuthenticated ? (
             <>
-              <Link to="/dashboard" className="btn-primary" style={{ justifyContent: 'center' }}>
-                Go to Dashboard
-              </Link>
+              <div style={{ color: 'var(--color-text-primary, #fff)', fontSize: '1rem', fontWeight: 500 }}>
+                Hi, <span style={{ color: '#00E5C7' }}>{user?.username}</span>
+              </div>
+              {hasCompletedAssessment ? (
+                <Link to="/dashboard" className="btn-primary" style={{ justifyContent: 'center' }}>
+                  Dashboard
+                </Link>
+              ) : (
+                <Link to="/assessment" className="btn-primary" style={{ justifyContent: 'center' }}>
+                  Take Test
+                </Link>
+              )}
               <button onClick={logout} style={{ color: '#E5484D', fontSize: '1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', marginTop: 8 }}>
                 <LogOut size={18} />
                 Log Out

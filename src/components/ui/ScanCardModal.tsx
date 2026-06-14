@@ -15,6 +15,7 @@ export default function ScanCardModal({ isOpen, onClose }: Props) {
   const [error, setError] = useState('')
   const [accessId, setAccessId] = useState('')
   const [pin, setPin] = useState('')
+  const [cardData, setCardData] = useState<{user_name: string, score: number, level: string} | null>(null)
 
   // Reset on open
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function ScanCardModal({ isOpen, onClose }: Props) {
       setError('')
       setAccessId('')
       setPin('')
+      setCardData(null)
     }
   }, [isOpen])
 
@@ -62,19 +64,27 @@ export default function ScanCardModal({ isOpen, onClose }: Props) {
     if (pin.length !== 4) return
     setStep('verifying')
     
-    // Simulate API call
-    await new Promise(r => setTimeout(r, 1500))
-    
-    // For demo: Accept any PIN and show Rajesh Kumar's data
-    // In real app, we would POST /api/verify-card with accessId and pin
-    if (pin === '0000') {
-      // Just a secret fail case to show error state if needed
-      setError("Invalid PIN or expired card.")
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+    try {
+      const res = await fetch(`${apiBaseUrl}/cards/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ card_id: accessId, pin })
+      })
+      if (!res.ok) {
+        if (res.status === 404) setError("card is not valid")
+        else if (res.status === 401) setError("Invalid PIN")
+        else setError("Verification failed")
+        setStep('pin')
+        return
+      }
+      const data = await res.json()
+      setCardData(data)
+      setStep('result')
+    } catch (err) {
+      setError("Network error occurred")
       setStep('pin')
-      return
     }
-
-    setStep('result')
   }
 
   return (
@@ -208,14 +218,16 @@ export default function ScanCardModal({ isOpen, onClose }: Props) {
                   
                   <div style={{ textAlign: 'center' }}>
                     <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', marginBottom: 4 }}>Access Granted</h3>
-                    <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Subject: R***** K****</p>
+                    <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                      Subject: {cardData?.user_name ? cardData.user_name.split(' ').map((part: string) => part[0] + '*'.repeat(part.length - 1)).join(' ') : 'Unknown'}
+                    </p>
                   </div>
 
                   <div style={{ width: '100%', padding: 24, background: 'rgba(0,0,0,0.2)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <ProgressRing score={770} size={140} strokeWidth={8} sublabel="" />
+                    <ProgressRing score={cardData?.score || 0} size={140} strokeWidth={8} sublabel="" />
                     <div style={{ marginTop: 16, textAlign: 'center' }}>
                       <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Risk Category</div>
-                      <div style={{ color: '#F5B82E', fontWeight: 600, fontSize: '1.1rem', marginTop: 4 }}>Established · Low Risk</div>
+                      <div style={{ color: '#F5B82E', fontWeight: 600, fontSize: '1.1rem', marginTop: 4 }}>{cardData?.level}</div>
                     </div>
                   </div>
 
