@@ -43,3 +43,17 @@ create table if not exists documents (
 );
 
 alter table documents disable row level security;
+
+create table if not exists schemes_matches (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references users (user_id) on delete cascade,
+  score_id uuid,
+  scheme_id text not null,
+  scheme_name text not null,
+  match_score integer not null,
+  eligible boolean not null,
+  details jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+alter table schemes_matches disable row level security;

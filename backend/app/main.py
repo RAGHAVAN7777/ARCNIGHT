@@ -7,6 +7,7 @@ from app.interview import InterviewRequest, interview_turn
 from app.documents import document_upload
 from app.scoring import score_user
 from app.supabase_client import get_supabase_client
+from app.schemes import match_schemes_for_user
 
 # Configure logging
 logging.basicConfig(
@@ -81,3 +82,45 @@ def create_score(
     supabase_client=Depends(get_supabase_client),
 ):
     return score_user(supabase_client, current_user.user_id)
+
+
+@app.post("/schemes")
+def create_schemes_matches(
+    current_user=Depends(require_authenticated_user),
+    supabase_client=Depends(get_supabase_client),
+):
+    # fetch latest score for user
+    resp = (
+        supabase_client.table("scores")
+        .select("id, score, factors")
+        .eq("user_id", current_user.user_id)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    rows = list(resp.data or [])
+    if not rows:
+        return {"error": "no score found"}
+
+    score_record = rows[0]
+    result = match_schemes_for_user(current_user.user_id, score_record, top_n=5)
+
+    # persist matches
+    inserts = []
+    for s in result["schemes"]:
+        inserts.append(
+            {
+                "user_id": current_user.user_id,
+                "score_id": score_record.get("id"),
+                "scheme_id": s["id"],
+                "scheme_name": s["name"],
+                "match_score": s["match_score"],
+                "eligible": s["eligible"],
+                "details": s.get("details", {}),
+            }
+        )
+
+    if inserts:
+        supabase_client.table("schemes_matches").insert(inserts).execute()
+
+    return result
